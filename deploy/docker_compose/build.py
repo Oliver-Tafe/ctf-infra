@@ -17,7 +17,7 @@ def main():
         if service:
             services = {**service, **services}
 
-    with open(os.path.join(local, "docker-compose.override.yaml"), "w") as f:
+    with open("docker-compose.yaml", "w") as f:
         compose = {
             "version": "3",
             "services": services,

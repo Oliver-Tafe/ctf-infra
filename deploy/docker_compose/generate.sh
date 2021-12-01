@@ -2,4 +2,4 @@
 
 BASE=$(dirname $0)
 
-$BASE/docker-compose.override.py
+$BASE/build.py

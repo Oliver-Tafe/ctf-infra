@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    challenge: blog-1
+  name: challenge-blog-1-service
+spec:
+  ports:
+  - name: port-4001-tcp
+    nodePort: 4001
+    port: 4001
+    protocol: TCP
+    targetPort: 80
+  selector:
+    challenge: blog-1
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: challenge
+    challenge: blog-1
+  name: challenge-blog-1-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      challenge: blog-1
+  template:
+    metadata:
+      labels:
+        app: challenge
+        challenge: blog-1
+      name: challenge-blog-1
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - image: challenge-blog-1:None
+        name: challenge-blog-1
+        ports:
+        - containerPort: 80
+---

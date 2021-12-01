@@ -1,0 +1,7 @@
+services:
+  challenge-blog-1:
+    image: challenge-blog-1
+    ports:
+    - 4001:80/tcp
+    restart: unless-stopped
+version: '3'

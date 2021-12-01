@@ -8,6 +8,7 @@ import sys
 import re
 import traceback
 import subprocess
+from enum import Enum
 from typing import Any, Dict, Iterable, List, Optional
 
 import colorama
@@ -50,6 +51,16 @@ def main():
 
     upgrade_parser = subparsers.add_parser("upgrade", help="upgrade ctftool")
     upgrade_parser.set_defaults(func=upgrade)
+
+    build_parser = subparsers.add_parser("build", help="build challenge images")
+    build_parser.add_argument("--push", action="store_true")
+    build_parser.add_argument(
+        "method", help="deployment method", type=Deployment, choices=list(Deployment)
+    )
+    build_parser.add_argument(
+        "--verbose", "-v", action="store_true", help="increase verbosity"
+    )
+    build_parser.set_defaults(func=build_images)
 
     args = parser.parse_args()
     if hasattr(args, "func"):
@@ -194,6 +205,28 @@ def generate_files(args):
 
     return success
 
+def generate_files(args):
+    success = True
+
+    for challenge in Challenge.load_all(False):
+        for filename, command in challenge.generate.items():
+            cwd = os.path.dirname(challenge.path)
+
+            try:
+                subprocess.run(command, shell=True, check=True, cwd=cwd)
+            except subprocess.CalledProcessError:
+                print(f"failed to generate {filename} {Fore.RED}✗{Style.RESET_ALL}")
+                success = False
+                raise
+
+            if not os.path.exists(os.path.join(cwd, filename)):
+                print(f"did not generate {filename} {Fore.RED}✗{Style.RESET_ALL}")
+                success = False
+            else:
+                print(f"generated {filename} {Fore.GREEN}✔{Style.RESET_ALL}")
+
+    return success
+
 
 def clean_files(args):
     for challenge in Challenge.load_all(False):
@@ -236,7 +269,6 @@ def upload_challenges(args):
 
     return success
 
-
 def upgrade(args):
     # download new code
     source_code = requests.get(UPSTREAM).text
@@ -246,6 +278,32 @@ def upgrade(args):
     with open(path, "w") as ctftool:
         ctftool.write(source_code)
 
+def build_images(args):
+    from deploy.docker.build import main as docker_build
+    docker = docker_build()
+    if docker:
+        print(f"could not build docker containers, please check your user permission{Fore.RED} ✗ ")
+        return
+    print(f"challenges built{Fore.GREEN} ✓ ")
+    print("run ./deploy.sh to start docker containers")
+    if (args.method == Deployment.docker):
+        print(f"challenges built, run ./deploy.sh to start docker containers{Fore.GREEN} ✓ ")
+    elif (args.method == Deployment.docker_compose):
+        from deploy.docker_compose.build import main as build
+        build()
+        print("or run docker-compose up -d to start docker-compose")
+    else:
+        from deploy.kube.build import main as build
+        build()
+        print("or run kubectl apply -k build/kube/ to start kubernetes")
+
+
+class Deployment(Enum):
+    docker = "docker"
+    docker_compose = "docker-compose"
+
+    def __str__(self):
+        return self.value
 
 class Challenge:
     """

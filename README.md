@@ -46,12 +46,18 @@ intended to be used in conjunction with either docker-compose or kubernetes.
 
 Build the challenge images:
 
-    $ ./deploy/build.py
+    $ ./ctftool.py build docker
 
 Build and push challenge images to a private registry:
 
     $ export IMAGE_REPO=...
-    $ ./deploy/build.py --push
+    $ ./ctftool.py build docker --push
+
+
+The built docker containers can be started by running the generated deploy script
+
+    $ ./deploy.sh
+
 
 The next steps assume that you have configured your machines to automatically
 pull from this private registry.
@@ -62,23 +68,12 @@ Deploying using docker-compose is a more lightweight alternative to building
 and maintaining an entire cluster. However, it will definitely be less
 flexible, so keep that in mind when making a decision.
 
-Set `PYTHONPATH` to the directory containing `ctftool.py` so you can import
-it in other scripts:
-
-    $ export PYTHONPATH=$PWD
-
-Copy the infrastructure code to a build directory:
-
-    $ mkdir -p build
-    $ cp -R deploy/docker-compose/ build/
-
 Build the build step for the infrastructure:
 
-    $ ./build/docker-compose/generate.sh
+    $ ./ctftool.py build docker-compose
 
 Launch it!
 
-    $ cd build/docker-compose
     $ docker-compose up
 
 ### Kubernetes
